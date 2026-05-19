@@ -1,0 +1,33 @@
+name: Purge stale work branches
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete branches older than 24h (except main)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CUTOFF=$(date -d '24 hours ago' +%s 2>/dev/null || date -v-24H +%s)
+          
+          for branch in $(git branch -r --format='%(refname:short)' | grep -v 'origin/main' | grep -v 'origin/HEAD'); do
+            BRANCH_NAME="${branch#origin/}"
+            LAST_COMMIT_DATE=$(git log -1 --format='%ct' "$branch" 2>/dev/null || echo "0")
+            
+            if [ "$LAST_COMMIT_DATE" -lt "$CUTOFF" ]; then
+              echo "Deleting stale branch: $BRANCH_NAME (last commit: $(date -d @$LAST_COMMIT_DATE 2>/dev/null || date -r $LAST_COMMIT_DATE))"
+              git push origin --delete "$BRANCH_NAME" 2>/dev/null || true
+            fi
+          done
+          
+          echo "Branch cleanup complete."
