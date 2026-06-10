@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "miaFinance": {
+      "type": "http",
+      "url": "${env:MIA_MCP_PUBLIC_URL}",
+      "headers": {
+        "Authorization": "Bearer ${env:MIA_MCP_BEARER}"
+      }
+    }
+  }
+}
