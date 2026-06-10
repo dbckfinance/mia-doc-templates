@@ -1,0 +1,11 @@
+{
+  "company": "Mazarin SAS",
+  "fileName": "lbo-mazarin",
+  "entryEbitda": 4100000,
+  "entryMultiple": 9.5,
+  "exitMultiple": 10.0,
+  "holdYears": 5,
+  "ebitdaCagr": 0.12,
+  "debtPct": 0.55,
+  "interestRate": 0.07
+}

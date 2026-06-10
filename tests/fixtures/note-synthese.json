@@ -1,0 +1,21 @@
+{
+  "company": "Mazarin SAS",
+  "sector": "Logiciels B2B — gestion documentaire",
+  "fileName": "note-synthese-mazarin",
+  "financials": {
+    "years": ["2023", "2024", "2025"],
+    "revenue": [12500000, 15800000, 19400000],
+    "ebitda": [2100000, 3000000, 4100000],
+    "netIncome": [900000, 1500000, 2200000],
+    "netDebt": [3500000, 2800000, 1500000]
+  },
+  "highlights": [
+    "Croissance du CA de 24% par an sur la période",
+    "Marge d'EBITDA en progression de 16,8% à 21,1%",
+    "Désendettement rapide : levier < 0,4x EBITDA fin 2025"
+  ],
+  "recommendations": [
+    "Lancer un processus compétitif restreint auprès de 8-10 acquéreurs stratégiques",
+    "Préparer une vendor due diligence financière avant ouverture de la data room"
+  ]
+}
