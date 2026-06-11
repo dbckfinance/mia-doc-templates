@@ -9,6 +9,9 @@
 //     { type: 'table', title, table: { headers, rows } }
 //     { type: 'chart', title, chart: { kind, ... } }   kind: bar|line|pie|waterfall|footballField|heatmap
 //     { type: 'facts', title, facts: [[label, value]] }
+//     { type: 'kpi', title, kpis: [{ label, value, sub? }], bullets? }
+//     { type: 'toc', title, items: [string] }
+//     { type: 'matrix', title, matrix: { xLabel, yLabel, points: [{ name, x: 0-10, y: 0-10, highlight? }] } }
 //     { type: 'custom', title, build(pptx, slide) }
 //   ]
 // }
@@ -89,6 +92,86 @@ function addBullets(slide, bullets, { x = MARGIN, y = 1.2, w = CONTENT_W, h = SL
     };
   });
   slide.addText(items, { x, y, w, h, valign: 'top' });
+}
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || 0));
+
+/** KPI cards row(s): up to 4 cards per row. Returns height consumed. */
+function renderKpiCards(slide, kpis, { x, y, w }) {
+  const items = kpis.slice(0, 8);
+  const perRow = Math.min(4, items.length);
+  const gap = 0.3;
+  const cardW = (w - gap * (perRow - 1)) / perRow;
+  const cardH = 1.5;
+  items.forEach((k, i) => {
+    const row = Math.floor(i / perRow);
+    const col = i % perRow;
+    const cx = x + col * (cardW + gap);
+    const cy = y + row * (cardH + gap);
+    slide.addShape('roundRect', {
+      x: cx, y: cy, w: cardW, h: cardH, rectRadius: 0.05,
+      fill: { color: BRAND.lightBlue }, line: { color: BRAND.accent, width: 1 },
+    });
+    slide.addText(String(k.value ?? '—'), {
+      x: cx, y: cy + 0.15, w: cardW, h: 0.62,
+      align: 'center', fontSize: 24, bold: true, color: BRAND.navy, fontFace: BRAND.font,
+    });
+    slide.addText(String(k.label || ''), {
+      x: cx, y: cy + 0.78, w: cardW, h: 0.35,
+      align: 'center', fontSize: 11, color: BRAND.text, fontFace: BRAND.font,
+    });
+    if (k.sub) {
+      slide.addText(String(k.sub), {
+        x: cx, y: cy + 1.12, w: cardW, h: 0.3,
+        align: 'center', fontSize: 9, italic: true, color: BRAND.medGray, fontFace: BRAND.font,
+      });
+    }
+  });
+  const rowsUsed = Math.ceil(items.length / perRow);
+  return rowsUsed * cardH + (rowsUsed - 1) * gap;
+}
+
+/** 2x2 positioning matrix with named points on 0-10 axes. */
+function renderMatrix(slide, matrix, area) {
+  slide.addShape('rect', {
+    x: area.x, y: area.y, w: area.w, h: area.h,
+    fill: { color: BRAND.white }, line: { color: BRAND.medGray, width: 1 },
+  });
+  slide.addShape('line', {
+    x: area.x + area.w / 2, y: area.y, w: 0, h: area.h,
+    line: { color: 'CCCCCC', width: 0.75, dashType: 'dash' },
+  });
+  slide.addShape('line', {
+    x: area.x, y: area.y + area.h / 2, w: area.w, h: 0,
+    line: { color: 'CCCCCC', width: 0.75, dashType: 'dash' },
+  });
+  if (matrix.xLabel) {
+    slide.addText(String(matrix.xLabel), {
+      x: area.x, y: area.y + area.h + 0.08, w: area.w, h: 0.3,
+      align: 'center', fontSize: 10, italic: true, color: BRAND.medGray, fontFace: BRAND.font,
+    });
+  }
+  if (matrix.yLabel) {
+    slide.addText(String(matrix.yLabel), {
+      x: area.x - 1.55, y: area.y + area.h / 2 - 0.15, w: 3, h: 0.3,
+      align: 'center', fontSize: 10, italic: true, color: BRAND.medGray, fontFace: BRAND.font, rotate: 270,
+    });
+  }
+  const r = 0.14;
+  for (const p of matrix.points || []) {
+    const px = area.x + (clamp(p.x, 0, 10) / 10) * (area.w - 0.4) + 0.2;
+    const py = area.y + area.h - ((clamp(p.y, 0, 10) / 10) * (area.h - 0.4) + 0.2);
+    slide.addShape('ellipse', {
+      x: px - r, y: py - r, w: r * 2, h: r * 2,
+      fill: { color: p.highlight ? BRAND.accent : BRAND.medGray },
+      line: { color: BRAND.white, width: 1 },
+    });
+    slide.addText(String(p.name || ''), {
+      x: px - 1, y: py + r + 0.02, w: 2, h: 0.28,
+      align: 'center', fontSize: 9, bold: Boolean(p.highlight),
+      color: p.highlight ? BRAND.navy : BRAND.text, fontFace: BRAND.font,
+    });
+  }
 }
 
 function renderChart(pptx, slide, chart, area) {
@@ -184,6 +267,36 @@ export async function buildDeck(spec) {
         fontSize: 13, color: BRAND.text, fontFace: BRAND.font, valign: 'top',
       });
       cursorY += Math.min(2.2, 0.5 * s.paragraphs.length + 0.3) + 0.1;
+    }
+
+    if (s.type === 'toc' && s.items?.length) {
+      s.items.slice(0, 10).forEach((item, i) => {
+        const y = cursorY + 0.15 + i * 0.52;
+        slide.addText(String(i + 1).padStart(2, '0'), {
+          x: MARGIN, y, w: 0.7, h: 0.45,
+          fontSize: 16, bold: true, color: BRAND.accent, fontFace: BRAND.font,
+        });
+        slide.addText(String(item), {
+          x: MARGIN + 0.85, y: y + 0.03, w: CONTENT_W - 0.85, h: 0.45,
+          fontSize: 14, color: BRAND.navy, fontFace: BRAND.font,
+        });
+      });
+      continue;
+    }
+
+    if (s.type === 'kpi' && s.kpis?.length) {
+      const usedH = renderKpiCards(slide, s.kpis, { x: MARGIN, y: cursorY, w: CONTENT_W });
+      cursorY += usedH + 0.25;
+      if (s.bullets?.length) addBullets(slide, s.bullets, { y: cursorY, h: SLIDE_H - cursorY - 0.7 });
+      continue;
+    }
+
+    if (s.type === 'matrix' && s.matrix?.points?.length) {
+      renderMatrix(slide, s.matrix, {
+        x: MARGIN + 0.7, y: cursorY + 0.15,
+        w: CONTENT_W - 1.4, h: SLIDE_H - cursorY - 1.5,
+      });
+      continue;
     }
 
     if (s.type === 'facts' && s.facts?.length) {
