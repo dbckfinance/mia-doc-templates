@@ -217,8 +217,8 @@ export async function buildDeck(spec) {
   const titleSlide = pptx.addSlide();
   titleSlide.background = { color: BRAND.navy };
   titleSlide.addShape('rect', { x: 0, y: SLIDE_H - 0.25, w: SLIDE_W, h: 0.25, fill: { color: BRAND.accent } });
-  titleSlide.addText(BRAND.brandName, {
-    x: MARGIN, y: 0.5, w: 4, h: 0.5, fontSize: 18, bold: true, color: BRAND.accent, fontFace: BRAND.font,
+  titleSlide.addText(spec.advisorName || BRAND.brandName, {
+    x: MARGIN, y: 0.5, w: 5, h: 0.5, fontSize: 18, bold: true, color: BRAND.accent, fontFace: BRAND.font,
   });
   titleSlide.addText(deckTitle, {
     x: MARGIN, y: 2.6, w: CONTENT_W, h: 1.4, fontSize: 40, bold: true, color: BRAND.white, fontFace: BRAND.font,
